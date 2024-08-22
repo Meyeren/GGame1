@@ -58,6 +58,11 @@ public class playerController : MonoBehaviour
             isJumping = true;
             jumpTimeCounter = jumpTime;
         }
+        if (Input.GetButtonDown("Jump") && isJumping)
+        {
+            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+            jumpTimeCounter -= Time.deltaTime;
+        }
         if (Input.GetButtonUp("Jump"))
         {
             isJumping = false;
