@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
 public class playerController : MonoBehaviour
 {
@@ -21,12 +22,17 @@ public class playerController : MonoBehaviour
     [SerializeField] private float checkRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
     [SerializeField] private bool isGrounded = true;
+    [SerializeField] private Transform wallCheck;
+    [SerializeField] private LayerMask wallLayer;
 
     [SerializeField] private float fallTime = 1.5f;
 
     private bool isJumping;
     [SerializeField] private float jumpTime = 0.5f;
     private float jumpTimeCounter;
+
+    private bool isWallSliding;
+    [SerializeField] private float wallSlidingSpeed = 2f;
 
     // Variabel for dash
     private bool canDash = true;
@@ -35,6 +41,14 @@ public class playerController : MonoBehaviour
     [SerializeField] private float dashingPower = 30f;
     [SerializeField] private float dashingTime = 0.2f;
     [SerializeField] private float dashingCooldown = 1f;
+
+    // Variable for wall jump
+    private bool isWallJumping;
+    private float wallJumpingDirection;
+    [SerializeField] private float wallJumpingTime = 0.2f;
+    private float wallJumpingCounter;
+    [SerializeField] private float wallJumpingDuration = 0.4f;
+    private Vector2 wallJumpingPower = new Vector2(8f, 16f);
 
     void Start()
     {
@@ -45,6 +59,15 @@ public class playerController : MonoBehaviour
     void Update()
     {
         isGrounded = Physics2D.OverlapCircle(groundCheck.position, checkRadius, groundLayer);
+
+        //wall?
+        WallSlide();
+        WallJump();
+
+        if (!isWallJumping)
+        {
+            Flip();
+        }
 
         //check for dashes brugt i luften
         if (isGrounded)
@@ -69,22 +92,29 @@ public class playerController : MonoBehaviour
             return;
         }
 
-        if (Input.GetButtonDown("Jump") && isGrounded)
+        if (Input.GetButtonDown("Jump"))
         {
+            if (isGrounded)
+            {
+                rb.velocity = new Vector2(rb.velocity.x, jumpForce);
+                isJumping = true;
+                jumpTimeCounter = jumpTime;
+            }
+            else if (isWallSliding || (isWallJumping && wallJumpingCounter > 0f))
+            {
+                rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
+                isWallJumping = true;
+                wallJumpingCounter = 0f;
+                Invoke(nameof(StopWallJumping), wallJumpingDuration);
+            }
+        }
 
-            rb.velocity = new Vector2(inputX, jumpForce);
-            //rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-            isJumping = true;
-            jumpTimeCounter = jumpTime;
-        }
-        if (Input.GetButtonDown("Jump") && isJumping)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
         {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            jumpTimeCounter -= Time.deltaTime;
-        }
-        if (Input.GetButtonUp("Jump"))
-        {
-            isJumping = false;
+            if (isGrounded || (!isGrounded && !hasAirDashed))
+            {
+                StartCoroutine(Dash());
+            }
         }
         // Leftshift for at dashe
         if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
@@ -98,6 +128,12 @@ public class playerController : MonoBehaviour
 
     private void FixedUpdate()
     {
+        //walljump
+        if (!isWallJumping && !isDashing)
+        {
+            rb.velocity = new Vector2(inputX * speed, rb.velocity.y);
+        }
+
         // igen idk men det er en del af dashing
         if (isDashing)
         {
@@ -109,6 +145,67 @@ public class playerController : MonoBehaviour
         {
             rb.velocity += Vector2.up * (Physics2D.gravity * fallTime * Time.fixedDeltaTime);
         }
+    }
+
+    //wall
+    private bool IsGrounded()
+    {
+        return Physics2D.OverlapCircle(groundCheck.position, 0.2f, groundLayer);
+    }
+    private bool IsWalled()
+    {
+        return Physics2D.OverlapCircle(wallCheck.position, 0.2f, wallLayer);
+    }
+    private void WallSlide()
+    {
+        if (IsWalled() && !IsGrounded() && Mathf.Abs(inputX) > 0)
+        {
+            isWallSliding = true;
+            rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlidingSpeed, float.MaxValue));
+        }
+        else
+        {
+            isWallSliding = false;
+        }
+    }
+
+    //walljump
+    private void WallJump()
+    {
+        if (isWallSliding)
+        {
+       
+            isWallJumping = false;
+            wallJumpingDirection = -transform.localScale.x;  
+            wallJumpingCounter = wallJumpingTime;
+        }
+        else
+        {
+            wallJumpingCounter -= Time.deltaTime;
+        }
+
+        if (Input.GetButtonDown("Jump") && wallJumpingCounter > 0f)
+        {
+            isWallJumping = true;
+            rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
+            wallJumpingCounter = 0f;
+
+            
+            if (transform.localScale.x != wallJumpingDirection)
+            {
+                Flip();
+            }
+
+            
+            isWallSliding = false;
+
+            Invoke(nameof(StopWallJumping), wallJumpingDuration);
+        }
+    }
+
+    private void StopWallJumping()
+    {
+        isWallJumping = false;
     }
 
     void Flip()
