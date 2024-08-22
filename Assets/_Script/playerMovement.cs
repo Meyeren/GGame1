@@ -23,7 +23,6 @@ public class playerController : MonoBehaviour
     [SerializeField] private bool isGrounded = true;
 
     [SerializeField] private float fallTime = 1.5f;
-    [SerializeField] private float dashForce = 10;
 
     private bool isJumping;
     [SerializeField] private float jumpTime = 0.5f;
@@ -59,18 +58,9 @@ public class playerController : MonoBehaviour
             isJumping = true;
             jumpTimeCounter = jumpTime;
         }
-        if (Input.GetButtonDown("Jump") && isJumping)
-        {
-            rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-            jumpTimeCounter -= Time.deltaTime;
-        }
         if (Input.GetButtonUp("Jump"))
         {
             isJumping = false;
-        }
-        if (Input.GetKeyDown(KeyCode.F) && isJumping)
-        {
-            rb.AddForce(new Vector2(rb.velocity.x,dashForce));
         }
     }
 
