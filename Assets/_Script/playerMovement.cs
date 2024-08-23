@@ -16,7 +16,7 @@ public class playerController : MonoBehaviour
     private Rigidbody2D rb;
 
     // Variabel for karakterdirektion
-    [SerializeField] private bool facingRight = false;
+    [SerializeField] private bool facingRight = true;
 
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float checkRadius = 0.2f;
@@ -31,8 +31,10 @@ public class playerController : MonoBehaviour
     [SerializeField] private float jumpTime = 0.5f;
     private float jumpTimeCounter;
 
+    //Wallslide
     private bool isWallSliding;
-    [SerializeField] private float wallSlidingSpeed = 2f;
+    [SerializeField] private float wallSlidingSpeed = 20f;
+    private float pushAway = 2f;
 
     // Variabel for dash
     private bool canDash = true;
@@ -48,11 +50,25 @@ public class playerController : MonoBehaviour
     [SerializeField] private float wallJumpingTime = 0.2f;
     private float wallJumpingCounter;
     [SerializeField] private float wallJumpingDuration = 0.4f;
-    private Vector2 wallJumpingPower = new Vector2(8f, 16f);
+    [SerializeField] private Vector2 wallJumpingPower = new Vector2(8f, 16f);
+
+
+    //Nofriktion
+    public PhysicsMaterial2D noFrictionMaterial;
+    private PhysicsMaterial2D originalMaterial;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        originalMaterial = rb.sharedMaterial;
+
+        // Skab et materiale uden friktion, hvis det ikke er sat
+        if (noFrictionMaterial == null)
+        {
+            noFrictionMaterial = new PhysicsMaterial2D();
+            noFrictionMaterial.friction = 0;
+            noFrictionMaterial.bounciness = 0;
+        }
     }
 
 
@@ -64,7 +80,7 @@ public class playerController : MonoBehaviour
         WallSlide();
         WallJump();
 
-        if (!isWallJumping)
+        if (isWallJumping)
         {
             Flip();
         }
@@ -78,11 +94,11 @@ public class playerController : MonoBehaviour
 
         // Variablen inputX bliver sat til det rå input fra det horizontale knapper
         inputX = Input.GetAxisRaw("Horizontal");
-        if (inputX > 0 && facingRight)
+        if (inputX > 0 && !facingRight)
         {
             Flip();
         }
-        if (inputX < 0 && !facingRight)
+        if (inputX < 0 && facingRight)
         {
             Flip();
         }
@@ -109,7 +125,7 @@ public class playerController : MonoBehaviour
             }
         }
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && canDash)
+        if (Input.GetKeyDown(KeyCode.F) && canDash)
         {
             if (isGrounded || (!isGrounded && !hasAirDashed))
             {
@@ -160,8 +176,11 @@ public class playerController : MonoBehaviour
     {
         if (IsWalled() && !IsGrounded() && Mathf.Abs(inputX) > 0)
         {
+            rb.sharedMaterial = noFrictionMaterial;
+
             isWallSliding = true;
-            rb.velocity = new Vector2(rb.velocity.x, Mathf.Clamp(rb.velocity.y, -wallSlidingSpeed, float.MaxValue));
+            rb.velocity = new Vector2(pushAway * -Mathf.Sign(inputX), -wallSlidingSpeed);
+            Debug.Log("slide");
         }
         else
         {
