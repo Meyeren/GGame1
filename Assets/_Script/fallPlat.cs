@@ -27,6 +27,14 @@ public class platFall : MonoBehaviour
             // Hvis du har brug for at tilføje tyngdekraft, sæt Gravity Scale
             rb.gravityScale = 1;
         }
+       
+    }
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "platFormDestroy")
+        {
+            Destroy(gameObject);
+        }
     }
 }
 
