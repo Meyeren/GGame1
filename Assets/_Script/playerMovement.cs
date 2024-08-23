@@ -27,7 +27,7 @@ public class playerController : MonoBehaviour
 
     [SerializeField] private float fallTime = 1.5f;
 
-    private bool isJumping;
+    //private bool isJumping;
     [SerializeField] private float jumpTime = 0.5f;
     private float jumpTimeCounter;
 
@@ -113,7 +113,7 @@ public class playerController : MonoBehaviour
             if (isGrounded)
             {
                 rb.velocity = new Vector2(rb.velocity.x, jumpForce);
-                isJumping = true;
+                //isJumping = true;
                 jumpTimeCounter = jumpTime;
             }
             else if (isWallSliding || (isWallJumping && wallJumpingCounter > 0f))
