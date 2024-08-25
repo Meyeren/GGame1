@@ -57,6 +57,10 @@ public class playerController : MonoBehaviour
     public PhysicsMaterial2D noFrictionMaterial;
     private PhysicsMaterial2D originalMaterial;
 
+    //CoyoteTime
+    [SerializeField] private float wallJumpCoyoteTime = 0.2f;
+    private float wallJumpCoyoteCounter = 0f;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -78,7 +82,7 @@ public class playerController : MonoBehaviour
 
         //wall?
         WallSlide();
-        WallJump();
+        HandleWallJump();
 
         if (isWallJumping)
         {
@@ -116,7 +120,7 @@ public class playerController : MonoBehaviour
                 //isJumping = true;
                 jumpTimeCounter = jumpTime;
             }
-            else if (isWallSliding || (isWallJumping && wallJumpingCounter > 0f))
+            else if (isWallSliding && wallJumpingCounter > 0f)
             {
                 rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
                 isWallJumping = true;
@@ -189,33 +193,40 @@ public class playerController : MonoBehaviour
     }
 
     //walljump
-    private void WallJump()
+    private void HandleWallJump()
     {
         if (isWallSliding)
         {
-       
             isWallJumping = false;
             wallJumpingDirection = -transform.localScale.x;  
             wallJumpingCounter = wallJumpingTime;
+            wallJumpCoyoteCounter = wallJumpCoyoteTime;
         }
         else
         {
-            wallJumpingCounter -= Time.deltaTime;
+            if (wallJumpingCounter > 0f)
+            {
+                wallJumpingCounter -= Time.deltaTime;
+            }
+
+            if (wallJumpCoyoteCounter > 0f)
+            {
+                wallJumpCoyoteCounter -= Time.deltaTime;
+            }
         }
 
         if (Input.GetButtonDown("Jump") && wallJumpingCounter > 0f)
         {
-            isWallJumping = true;
             rb.velocity = new Vector2(wallJumpingDirection * wallJumpingPower.x, wallJumpingPower.y);
+            isWallJumping = true;
             wallJumpingCounter = 0f;
+            wallJumpCoyoteCounter = 0f;
 
-            
             if (transform.localScale.x != wallJumpingDirection)
             {
                 Flip();
             }
 
-            
             isWallSliding = false;
 
             Invoke(nameof(StopWallJumping), wallJumpingDuration);
